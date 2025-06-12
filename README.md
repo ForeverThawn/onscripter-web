@@ -1,6 +1,6 @@
 # Onscripter Web
 
-Onscripter Web 是一个基于 Rust 和 JavaScript 的 Web 服务器项目，用于在网页上运行 Onscripter 游戏。提供了一个简单的导航，允许用户在游戏库中国呢选择游戏并启动游戏。基于Onscripter-Yuri（*见底部*）
+Onscripter Web 是一个 Web 服务器项目，用于在网页上提供 Onscripter 游戏的资源支持。提供了一个简单的导航，允许用户在游戏库中选择游戏并启动游戏。项目内核基于[Onscripter-Yuri](https://github.com/YuriSizuku/OnscripterYuri)（*见底部*）
 
 ## 运行步骤
 
@@ -13,10 +13,10 @@ cd onscripter-web
 
 ### 2. 安装依赖
 
-确保你已经安装了 Rust 和 Cargo。然后在项目根目录下运行以下命令：
+确保你已经安装了 Rust 。然后在项目根目录下运行以下命令：
 
 ```bash
-cargo build
+cargo build --release
 ```
 
 ### 3. 配置服务器参数
