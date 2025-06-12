@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ONS Home</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #3498db;
+            --hover-color: #2980b9;
+            --border-color: #333;
+            --shadow-color: rgba(0,0,0,0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px var(--shadow-color);
+            letter-spacing: 1px;
+        }
+
+        /* 纵向排列的文件夹列表 */
+        .folder-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .folder-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 20px 15px;
+            text-align: left;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .folder-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--accent-color);
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.3s ease;
+        }
+
+        .folder-btn:hover {
+            background-color: rgba(30, 30, 30, 0.8);
+            transform: translateX(5px);
+            box-shadow: 0 6px 12px var(--shadow-color);
+            border-color: var(--accent-color);
+        }
+
+        .folder-btn:hover::before {
+            transform: scaleY(1);
+        }
+
+        .folder-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .folder-name {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .folder-path {
+            font-size: 12px;
+            color: rgba(224, 224, 224, 0.6);
+        }
+
+        .folder-icon {
+            width: 30px;
+            height: 30px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: 50%;
+            color: var(--accent-color);
+        }
+
+        /* 分页控制 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .page-btn:hover:not(.active) {
+            background-color: rgba(30, 30, 30, 0.8);
+            border-color: rgba(52, 152, 219, 0.5);
+        }
+
+        .page-btn.active {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .page-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 18px;
+            color: rgba(224, 224, 224, 0.7);
+            padding: 30px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .error {
+            text-align: center;
+            font-size: 18px;
+            color: #e74c3c;
+            padding: 30px;
+            background-color: rgba(231, 76, 60, 0.1);
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        /* 加载指示器样式 */
+        .loader {
+            border: 3px solid rgba(224, 224, 224, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid var(--accent-color);
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>导航页</h1>
+        <div id="folder-container">
+            <div class="loading">
+                <div class="loader"></div>
+                加载文件夹列表中...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 每页显示的文件夹数量
+        const FOLDERS_PER_PAGE = 10;
+        // 当前页码
+        let currentPage = 1;
+        // 所有文件夹数据
+        let allFolders = [];
+
+        // 页面加载完成后获取文件夹列表
+        document.addEventListener('DOMContentLoaded', async function() {
+            const folderContainer = document.getElementById('folder-container');
+            
+            try {
+                // 获取文件夹列表
+                const response = await fetch('/api/folders');
+                if (!response.ok) {
+                    throw new Error(`网络响应失败: ${response.status}`);
+                }
+                
+                const folders = await response.json();
+                allFolders = folders;
+                
+                // 清空加载提示
+                folderContainer.innerHTML = '';
+                
+                if (folders.length === 0) {
+                    folderContainer.innerHTML = '<div class="error">未找到文件夹</div>';
+                    return;
+                }
+                
+                // 渲染第一页
+                renderFolderPage(1);
+                
+            } catch (error) {
+                console.error('获取文件夹列表时出错:', error);
+                folderContainer.innerHTML = '<div class="error">获取文件夹列表失败</div>';
+            }
+        });
+        
+        // 渲染指定页面的文件夹
+        async function renderFolderPage(page) {
+            const folderContainer = document.getElementById('folder-container');
+            const totalPages = Math.ceil(allFolders.length / FOLDERS_PER_PAGE);
+            
+            // 检查页码有效性
+            if (page < 1 || page > totalPages) return;
+            
+            // 更新当前页码
+            currentPage = page;
+            
+            // 计算当前页的文件夹范围
+            const startIndex = (page - 1) * FOLDERS_PER_PAGE;
+            const endIndex = Math.min(startIndex + FOLDERS_PER_PAGE, allFolders.length);
+            const pageFolders = allFolders.slice(startIndex, endIndex);
+            
+            // 显示加载状态
+            folderContainer.innerHTML = '<div class="loading"><div class="loader"></div>加载文件夹内容...</div>';
+            
+            // 为当前页的文件夹创建按钮
+            const buttons = await Promise.all(pageFolders.map(async folder => {
+                try {
+                    // 尝试获取文件夹中的onsyuri_index.json文件
+                    const indexResponse = await fetch(`/${folder.name}/onsyuri_index.json`);
+                    
+                    if (indexResponse.ok) {
+                        const indexData = await indexResponse.json();
+                        // 使用title字段作为按钮名称
+                        return createFolderButton(folder, indexData.title || folder.name);
+                    } else {
+                        // 如果没有找到index文件，使用文件夹名称
+                        console.warn(`未找到 ${folder.name}/onsyuri_index.json 文件`);
+                        return createFolderButton(folder, folder.name);
+                    }
+                } catch (error) {
+                    console.error(`获取 ${folder.name}/onsyuri_index.json 时出错:`, error);
+                    // 出错时仍然使用文件夹名称
+                    return createFolderButton(folder, folder.name);
+                }
+            }));
+            
+            // 创建文件夹列表容器
+            const folderList = document.createElement('div');
+            folderList.className = 'folder-list';
+            
+            // 将所有按钮添加到列表中
+            buttons.forEach(button => {
+                folderList.appendChild(button);
+            });
+            
+            // 创建分页控件
+            const pagination = createPaginationControls(totalPages);
+            
+            // 更新容器内容
+            folderContainer.innerHTML = '';
+            folderContainer.appendChild(folderList);
+            folderContainer.appendChild(pagination);
+        }
+        
+        // 创建文件夹按钮的辅助函数
+        function createFolderButton(folder, displayName) {
+            const button = document.createElement('button');
+            button.className = 'folder-btn';
+            
+            // 设置按钮内容
+            button.innerHTML = `
+                <div class="folder-icon">📁</div>
+                <div class="folder-content">
+                    <div class="folder-name">${displayName}</div>
+                    <div class="folder-path">${folder.name}</div>
+                </div>
+                <div class="folder-arrow">→</div>
+            `;
+            
+            // 添加点击事件
+            button.onclick = function() {
+                window.location.href = folder.path;
+            };
+            
+            return button;
+        }
+        
+        // 创建分页控件
+        function createPaginationControls(totalPages) {
+            const pagination = document.createElement('div');
+            pagination.className = 'pagination';
+            
+            // 创建上一页按钮
+            const prevButton = document.createElement('button');
+            prevButton.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
+            prevButton.textContent = '上一页';
+            prevButton.onclick = () => {
+                if (currentPage > 1) {
+                    renderFolderPage(currentPage - 1);
+                }
+            };
+            pagination.appendChild(prevButton);
+            
+            // 计算要显示的页码范围
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(startPage + 4, totalPages);
+            
+            // 如果显示的页码不足5个，调整起始页码
+            if (endPage - startPage < 4 && startPage > 1) {
+                startPage = Math.max(1, endPage - 4);
+            }
+            
+            // 创建页码按钮
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageButton.textContent = i;
+                pageButton.onclick = () => renderFolderPage(i);
+                pagination.appendChild(pageButton);
+            }
+            
+            // 创建下一页按钮
+            const nextButton = document.createElement('button');
+            nextButton.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextButton.textContent = '下一页';
+            nextButton.onclick = () => {
+                if (currentPage < totalPages) {
+                    renderFolderPage(currentPage + 1);
+                }
+            };
+            pagination.appendChild(nextButton);
+            
+            return pagination;
+        }
+    </script>
+</body>
+</html>
