@@ -1,6 +1,6 @@
 # Onscripter Web
 
-Onscripter Web 是一个基于 Rust 和 JavaScript 的 Web 服务器项目，用于在网页上运行 Onscripter 游戏。它提供了一个简单的界面，允许用户选择游戏文件夹并启动游戏。
+Onscripter Web 是一个基于 Rust 和 JavaScript 的 Web 服务器项目，用于在网页上运行 Onscripter 游戏。提供了一个简单的导航，允许用户在游戏库中国呢选择游戏并启动游戏。基于Onscripter-Yuri（*见底部*）
 
 ## 运行步骤
 
